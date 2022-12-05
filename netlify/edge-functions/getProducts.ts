@@ -1,9 +1,17 @@
 // Below this fold are our URL imports. You can read more about that here https://deno.land/manual@v1.0.0/linking_to_external_code
 import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
-import { HTMLRewriter } from "https://ghuc.cc/worker-tools/html-rewriter/index.ts";
+import { HTMLRewriter } from "https://raw.githubusercontent.com/worker-tools/html-rewriter/master/index.ts";
 
 import type { Context } from "https://edge.netlify.com/";
-import type { QueryObjectResult } from "https://deno.land/x/postgres@v0.17.0/query.ts";
+
+type Product = {
+  id: number;
+  created_at: string;
+  name: string;
+  description: string;
+  price: number;
+  done: boolean;
+};
 
 export default async (_request: Request, context: Context) => {
   try {
@@ -26,18 +34,17 @@ export default async (_request: Request, context: Context) => {
      */
 
     const response = await context.next();
-    const products = await client.queryObject("SELECT * FROM products");
+    const result = await client.queryObject("SELECT * FROM products");
 
     /* 
          3. 
          We create some html based on the products coming from the 
          DB so we can drop it into our rewrite function below
      */
-    const productsHTML = products.rows.map(
-      (product: QueryObjectResult<unknown>) => {
-        return `<p>${product.name}</p>`;
-      }
-    );
+    const products: Product[] = result.rows as Product[];
+    const productsHTML = products.map((product) => {
+      return `<p>${product.name}</p>`;
+    });
 
     /*
          4. 
